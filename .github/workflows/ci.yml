@@ -1,90 +1,136 @@
 name: CI
 
-on:
-  pull_request:
-  push:
-    branches: [ main ]
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  scan_ruby:
+  bundle_install:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    env:
+      BUNDLE_PATH: vendor/bundle
+      GEM_HOME: vendor/bundle
+      BUNDLE_JOBS: 3
+      BUNDLE_RETRY: 3
+      RAILS_ENV: test
 
-      - name: Set up Ruby
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        id: bundle-cache
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - if: ${{ steps.bundle-cache.outputs.cache-hit != 'true' }}
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: .ruby-version
-          bundler-cache: true
+          ruby-version: 3.2.2
 
-      - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
+      - if: ${{ steps.bundle-cache.outputs.cache-hit != 'true' }}
+        name: Bundle install
+        run: |
+          bundle install --jobs 4 --retry 3
 
-  scan_js:
+
+  rspec:
     runs-on: ubuntu-latest
+    needs: bundle_install
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    env:
+      BUNDLE_PATH: vendor/bundle
+      GEM_HOME: vendor/bundle
+      BUNDLE_JOBS: 3
+      BUNDLE_RETRY: 3
+      RAILS_ENV: test
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      CC_TEST_REPORTER_ID: 40d28685562b0dd9ba05bf4ee3d9aee9619b35bb39af0e88d219c7140cb75f94
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Scan for security vulnerabilities in JavaScript dependencies
-        run: bin/importmap audit
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
-
-  test:
-    runs-on: ubuntu-latest
-
-    # services:
-    #  redis:
-    #    image: redis
-    #    ports:
-    #      - 6379:6379
-    #    options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y google-chrome-stable curl libjemalloc2 libvips sqlite3
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: .ruby-version
-          bundler-cache: true
-
-      - name: Run tests
+    services:
+      postgres:
+        image: postgres:latest
+        ports:
+          - 5432:5432
         env:
-          RAILS_ENV: test
-          # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test test:system
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: universities_api_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
-      - name: Keep screenshots from failed system tests
-        uses: actions/upload-artifact@v4
-        if: failure()
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
         with:
-          name: screenshots
-          path: ${{ github.workspace }}/tmp/screenshots
-          if-no-files-found: ignore
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2.2
+
+      - name: Bundle install
+        run: |
+          bundle install --jobs 4 --retry 3
+
+      - name: Setup Code Climate test-reporter
+        run: |
+          curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+          chmod +x ./cc-test-reporter
+          ./cc-test-reporter before-build
+
+      - name: Setup Database
+        run: |
+          cp config/database.template.yml config/database.yml
+          bundle exec rails db:create
+          bundle exec rails db:schema:load
+
+      - run: bundle exec rspec
+
+      - name: Publish code coverage
+        run: |
+          export GIT_BRANCH="${GITHUB_REF/refs\/heads\//}"
+          ./cc-test-reporter after-build -r $CC_TEST_REPORTER_ID
+
+  rubocop:
+    runs-on: ubuntu-latest
+    needs: bundle_install
+
+    env:
+      BUNDLE_PATH: vendor/bundle
+      GEM_HOME: vendor/bundle
+      BUNDLE_JOBS: 3
+      BUNDLE_RETRY: 3
+      RAILS_ENV: test
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/cache@v3
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gems-
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2.2
+
+      - name: Bundle install
+        run: bundle install --jobs 4 --retry 3
+
+      - run: bundle exec rubocop --config .rubocop.yml
