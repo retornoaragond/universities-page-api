@@ -13,3 +13,15 @@ class University < ApplicationRecord
   accepts_nested_attributes_for :contact_emails, allow_destroy: true
 
 end
+
+# == Schema Information
+#
+# Table name: universities
+#
+#  id          :bigint(8)        not null, primary key
+#  name        :string
+#  location    :string
+#  website_url :string
+#  created_at  :datetime         not null
+#  updated_at  :datetime         not null
+#

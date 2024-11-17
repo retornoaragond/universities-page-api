@@ -2,11 +2,21 @@
 
 class API::V1::UniversitiesController < API::V1::APIController
 
+  include Pagy::Backend
+
   before_action :find_university, only: %i[show update destroy]
 
   def index
-    universities = University.all
-    render json: universities
+    searchable_columns = %w[name] # Define the columns that can be searched: name, location or website_url
+
+    scoped_universities = SearchAndSortService.new(University.all, params, searchable_columns).call
+
+    @pagy, @universities = pagy(scoped_universities, items: params[:per_page] || 10)
+
+    render json: {
+      universities: @universities,
+      pagy: pagy_metadata(@pagy),
+    }
   end
 
   def show
