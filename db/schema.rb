@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_11_16_061335) do
+ActiveRecord::Schema[7.2].define(version: 2024_11_16_201952) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "api_users", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "token_digest"
+    t.datetime "expires_at"
+    t.datetime "revoked_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["token_digest"], name: "index_api_users_on_token_digest", unique: true
+  end
 
   create_table "contact_emails", force: :cascade do |t|
     t.string "email"
