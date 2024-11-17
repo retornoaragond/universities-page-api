@@ -5,6 +5,7 @@ source "https://rubygems.org"
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "bootsnap", require: false
 gem "image_processing", "~> 1.2"
+gem "pagy"
 gem "pg", "~> 1.5"
 gem "puma", ">= 5.0"
 gem "rack-cors"
