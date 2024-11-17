@@ -9,3 +9,13 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+require "factory_bot_rails"
+
+100.times do
+  university = FactoryBot.create(:university)
+
+  rand(1..5).times do
+    FactoryBot.create(:contact_email, university: university)
+  end
+end
