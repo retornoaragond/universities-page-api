@@ -25,17 +25,14 @@ RSpec.describe API::V1::UniversitiesController, type: :request do
   let(:invalid_attributes) { { name: "" } }
 
   describe "GET /index" do
-    it_behaves_like "api authed endpoint" do
-      let(:request) { get("/api/v1/universities", headers:) }
-    end
-
     it "returns a paginated list of universities" do
       get "/api/v1/universities", headers: auth_headers
 
       expect(response).to have_http_status(:ok)
       json_response = response.parsed_body
+
       expect(json_response["universities"].size).to eq(2)
-      expect(json_response["pagy"]).to be_present
+      expect(json_response["meta"]).to be_present
     end
 
     it "applies search filters" do

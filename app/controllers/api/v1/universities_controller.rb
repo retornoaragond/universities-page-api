@@ -13,7 +13,11 @@ class API::V1::UniversitiesController < API::V1::APIController
 
     @pagy, @universities = pagy(scoped_universities, items: params[:per_page] || 10)
 
-    render json: @universities, status: :ok, each_serializer: UniversitySerializer, meta: pagy_metadata(@pagy)
+    render json: {
+      universities: ActiveModelSerializers::SerializableResource.new(@universities,
+                                                                     each_serializer: UniversitySerializer),
+      meta: pagy_metadata(@pagy),
+    }, status: :ok
   end
 
   def show
@@ -23,17 +27,27 @@ class API::V1::UniversitiesController < API::V1::APIController
   def create
     university = University.new(university_params)
     if university.save
-      render json: { message: "University created successfully", university: university }, status: :created
+      render json: {
+        message: "University created successfully",
+        university: UniversitySerializer.new(university),
+      }, status: :created
     else
-      render json: { errors: university.errors.full_messages }, status: :unprocessable_entity
+      render json: {
+        errors: university.errors.full_messages,
+      }, status: :unprocessable_entity
     end
   end
 
   def update
     if @university.update(university_params)
-      render json: { message: "University updated successfully", university: @university }, status: :ok
+      render json: {
+        message: "University updated successfully",
+        university: UniversitySerializer.new(@university),
+      }, status: :ok
     else
-      render json: { errors: @university.errors.full_messages }, status: :unprocessable_entity
+      render json: {
+        errors: @university.errors.full_messages,
+      }, status: :unprocessable_entity
     end
   end
 
