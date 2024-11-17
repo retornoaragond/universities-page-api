@@ -13,14 +13,11 @@ class API::V1::UniversitiesController < API::V1::APIController
 
     @pagy, @universities = pagy(scoped_universities, items: params[:per_page] || 10)
 
-    render json: {
-      universities: @universities,
-      pagy: pagy_metadata(@pagy),
-    }
+    render json: @universities, status: :ok, each_serializer: UniversitySerializer, meta: pagy_metadata(@pagy)
   end
 
   def show
-    render json: @university
+    render json: @university, status: :ok, serializer: UniversitySerializer
   end
 
   def create
