@@ -12,7 +12,7 @@
 
 require "factory_bot_rails"
 
-100.times do
+1000.times do
   university = FactoryBot.create(:university)
 
   rand(1..5).times do

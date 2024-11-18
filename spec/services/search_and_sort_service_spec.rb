@@ -9,12 +9,13 @@ RSpec.describe SearchAndSortService, type: :service do
 
   let(:scope) { University.all }
   let(:searchable_columns) { %w[name location website_url] }
+  let(:order_columns) { %w[name location website_url] }
 
   describe "#call" do
     context "when sorting" do
       it "sorts records in ascending order by a valid column" do
         params = { sort_by: "name", sort_order: "asc" }
-        service = SearchAndSortService.new(scope, params, searchable_columns)
+        service = SearchAndSortService.new(scope, params, searchable_columns, order_columns)
 
         result = service.call
 
@@ -23,7 +24,7 @@ RSpec.describe SearchAndSortService, type: :service do
 
       it "sorts records in descending order by a valid column" do
         params = { sort_by: "name", sort_order: "desc" }
-        service = SearchAndSortService.new(scope, params, searchable_columns)
+        service = SearchAndSortService.new(scope, params, searchable_columns, order_columns)
 
         result = service.call
 
@@ -32,7 +33,7 @@ RSpec.describe SearchAndSortService, type: :service do
 
       it "returns unsorted records when sort_by is invalid" do
         params = { sort_by: "invalid_column", sort_order: "asc" }
-        service = SearchAndSortService.new(scope, params, searchable_columns)
+        service = SearchAndSortService.new(scope, params, searchable_columns, order_columns)
 
         result = service.call
 
@@ -41,7 +42,7 @@ RSpec.describe SearchAndSortService, type: :service do
 
       it "returns unsorted records when sort_order is invalid" do
         params = { sort_by: "name", sort_order: "invalid_order" }
-        service = SearchAndSortService.new(scope, params, searchable_columns)
+        service = SearchAndSortService.new(scope, params, searchable_columns, order_columns)
 
         result = service.call
 
@@ -50,7 +51,7 @@ RSpec.describe SearchAndSortService, type: :service do
 
       it "returns unsorted records when both sort_by and sort_order are invalid" do
         params = { sort_by: "invalid_column", sort_order: "invalid_order" }
-        service = SearchAndSortService.new(scope, params, searchable_columns)
+        service = SearchAndSortService.new(scope, params, searchable_columns, order_columns)
 
         result = service.call
 
@@ -61,7 +62,7 @@ RSpec.describe SearchAndSortService, type: :service do
     context "when searching and sorting" do
       it "filters and sorts the records" do
         params = { search: "University", sort_by: "location", sort_order: "asc" }
-        service = SearchAndSortService.new(scope, params, searchable_columns)
+        service = SearchAndSortService.new(scope, params, searchable_columns, order_columns)
 
         result = service.call
 
