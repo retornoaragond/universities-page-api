@@ -7,11 +7,12 @@ class API::V1::UniversitiesController < API::V1::APIController
   before_action :find_university, only: %i[show update destroy]
 
   def index
-    searchable_columns = %w[name] # Define the columns that can be searched: name, location or website_url
+    searchable_columns = %w[name]
+    order_columns = %w[name location website_url]
+    scoped_universities = SearchAndSortService.new(University.includes(:contact_emails),
+                                                   params, searchable_columns, order_columns).call
 
-    scoped_universities = SearchAndSortService.new(University.all, params, searchable_columns).call
-
-    @pagy, @universities = pagy(scoped_universities, items: params[:per_page] || 10)
+    @pagy, @universities = pagy(scoped_universities)
 
     render json: {
       universities: ActiveModelSerializers::SerializableResource.new(@universities,
