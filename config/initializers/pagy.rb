@@ -210,5 +210,5 @@ require "pagy/extras/overflow"
 
 # When you are done setting your own default freeze it, so it will not get changed accidentally
 Pagy::DEFAULT[:overflow] = :empty_page
-Pagy::DEFAULT[:items] = 10
+Pagy::DEFAULT[:limit] = 10
 Pagy::DEFAULT[:max_items] = 100
