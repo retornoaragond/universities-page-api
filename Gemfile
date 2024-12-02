@@ -3,7 +3,7 @@
 source "https://rubygems.org"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
-gem "active_model_serializers", "~> 0.10.13"
+gem "active_model_serializers", "~> 0.10.15"
 gem "bootsnap", require: false
 gem "image_processing", "~> 1.2"
 gem "pagy"
